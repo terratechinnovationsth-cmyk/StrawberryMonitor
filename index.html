@@ -174,7 +174,7 @@
                         <div class="col-lg-5">
                             <div class="plant-photo-large mb-3">
                                 <img id="modalPlantImg" src="" alt="Plant Photo" style="width:100%; height:100%; object-fit: cover;" 
-                                onerror="this.onerror=null; this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22600%22%20height%3D%22400%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20600%20400%22%20preserveAspectRatio%3D%22none%22%3E%3Crect%20width%3D%22600%22%20height%3D%22400%22%20fill%3D%22%23111111%22%3E%3C%2Frect%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20fill%3D%22%238b949e%22%20font-size%3D%2224%22%20font-family%3D%22sans-serif%22%20text-anchor%3D%22middle%22%20dy%3D%22.3em%22%3ENo%20Photo%20Available%3C%2Ftext%3E%3C%2Fsvg%3E';">
+                                onerror="this.onerror=null; this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/No_image_available.svg/600px-No_image_available.svg.png';">
                             </div>
                             <div class="tech-card mb-0" style="padding: 15px;">
                                 <div class="detail-row" style="padding-top: 0;">
@@ -240,10 +240,10 @@
 
         let plantDB = {}; 
 
-        // ตัวแปรเก็บรูปจำลอง Offline 
-        const FALLBACK_IMAGE_URL = 'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22600%22%20height%3D%22400%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20600%20400%22%20preserveAspectRatio%3D%22none%22%3E%3Crect%20width%3D%22600%22%20height%3D%22400%22%20fill%3D%22%23111111%22%3E%3C%2Frect%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20fill%3D%22%238b949e%22%20font-size%3D%2224%22%20font-family%3D%22sans-serif%22%20text-anchor%3D%22middle%22%20dy%3D%22.3em%22%3ENo%20Photo%20Available%3C%2Ftext%3E%3C%2Fsvg%3E';
+        const FALLBACK_IMAGE_URL = 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/No_image_available.svg/600px-No_image_available.svg.png';
 
         function fetchPlantDatabase() {
+            // ⚠️ 1. Google Sheet ID
             const sheetID = '1yyJ724hBNOF69dTjgGpK_SvgR8fFqlMy4tOClpkWy-M'; 
             
             const query = new google.visualization.Query(`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=Plant_Inventory&tq=select A,B,C,D,E,F,G,H,I,J`);
@@ -251,6 +251,7 @@
             query.send(res => {
                 if (res.isError()) {
                     let errMsg = res.getDetailedMessage() || res.getMessage();
+                    console.error('Error in query: ' + errMsg);
                     document.getElementById('dynamic-grid-container').innerHTML = `<div class="text-center text-danger p-4">❌ Error: ${errMsg}</div>`;
                     return;
                 }
@@ -322,24 +323,28 @@
                     </div>`;
         }
 
-        // ฟังก์ชันแปลงลิงก์ Google Drive ให้ใช้งานกับ <img> ได้จริง
+        // --- อัปเกรดระบบประมวลผลรูปภาพสำหรับ AppSheet โดยเฉพาะ ---
         function processImageUrl(url) {
-            if (!url || url.trim() === '') return FALLBACK_IMAGE_URL;
-            
-            // ตรวจจับลิงก์แบบเก่า (open?id=)
-            let matchOpen = url.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/);
-            if (matchOpen && matchOpen[1]) {
-                return 'https://drive.google.com/uc?export=view&id=' + matchOpen[1];
+            if (!url || typeof url !== 'string' || url.trim() === '') {
+                return FALLBACK_IMAGE_URL;
             }
+            url = url.trim();
             
-            // ตรวจจับลิงก์แบบใหม่ (file/d/ID/view)
-            let matchFile = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
-            if (matchFile && matchFile[1]) {
-                return 'https://drive.google.com/uc?export=view&id=' + matchFile[1];
+            // ถ้าเป็นลิงก์เว็บปกติ (มี http นำหน้า)
+            if (url.startsWith('http')) {
+                let matchOpen = url.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/);
+                if (matchOpen && matchOpen[1]) return 'https://drive.google.com/uc?export=view&id=' + matchOpen[1];
+                let matchFile = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+                if (matchFile && matchFile[1]) return 'https://drive.google.com/uc?export=view&id=' + matchFile[1];
+                return url;
             }
 
-            // ถ้ารูปไม่ใช่ลิงก์ Google Drive ก็ปล่อยผ่านตามปกติ
-            return url;
+            // ⚠️ 2. แปลงชื่อไฟล์จาก AppSheet เป็นลิงก์ภาพ
+            const appName = "Strawberry_DB-709476484";
+            const tableName = "Plant_Inventory";
+            
+            // สร้าง URL พิเศษเพื่อดึงรูปจาก AppSheet
+            return `https://www.appsheet.com/template/gettablefileurl?appName=${appName}&tableName=${tableName}&fileName=${encodeURIComponent(url)}`;
         }
 
         function openPlantProfile(plantId, tableNum, rowNum) {
@@ -362,7 +367,7 @@
             document.getElementById('modalLeaf').innerText = dbData.leaf || '--';
             document.getElementById('modalRunner').innerText = dbData.runner || '--';
             
-            // อัปเดตรูปภาพโดยผ่านตัวกรองลิงก์ Google Drive ก่อน
+            // ส่งชื่อไฟล์เข้าไปแปลงเป็น URL รูปภาพ
             let finalImageUrl = processImageUrl(dbData.photo);
             document.getElementById('modalPlantImg').src = finalImageUrl;
 
