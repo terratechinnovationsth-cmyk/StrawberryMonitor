@@ -11,7 +11,7 @@
             --bg-dark: #0b0e11; --card-bg: #161b22; --text-main: #e4e6eb; --border-color: #30363d;
             --accent-blue: #58a6ff; --accent-orange: #ff9f43; --accent-green: #2ecc71; --accent-red: #ff4d4d;
         }
-        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Segoe UI', Tahoma, sans-serif; padding-bottom: 50px; }
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Segoe UI', Tahoma, sans-serif; padding-bottom: 50px; overflow-x: hidden; }
         
         /* Base Card Styles */
         .tech-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
@@ -35,19 +35,28 @@
         .status-sick { border-color: var(--accent-orange); }
         .status-dead { border-color: var(--accent-red); }
 
-        /* Custom Dropdown */
         .form-select-dark { background-color: #222; color: #fff; border: 1px solid var(--border-color); width: auto; font-size: 0.85rem; font-weight: bold; cursor: pointer; }
         .form-select-dark:focus { box-shadow: none; border-color: var(--accent-blue); }
 
-        /* Modal Styling */
-        .modal-content { background-color: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 16px; }
-        .modal-header { border-bottom: 1px solid var(--border-color); }
-        .modal-title { font-weight: bold; text-transform: uppercase; }
+        /* --- New Plant Profile Modal Styling --- */
+        .modal-content { background-color: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 16px; overflow: hidden; }
+        .modal-header { border-bottom: 1px solid var(--border-color); background: rgba(0,0,0,0.2); padding: 20px 25px; }
+        .profile-title { font-size: 1.5rem; font-weight: bold; margin: 0; color: #fff; display: flex; align-items: center; gap: 10px; }
+        .profile-badge { font-size: 0.75rem; padding: 5px 10px; border-radius: 20px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        .badge-healthy { background: rgba(46, 204, 113, 0.2); color: var(--accent-green); border: 1px solid var(--accent-green); }
+        .badge-sick { background: rgba(255, 159, 67, 0.2); color: var(--accent-orange); border: 1px solid var(--accent-orange); }
+        .badge-dead { background: rgba(255, 77, 77, 0.2); color: var(--accent-red); border: 1px solid var(--accent-red); }
         .modal-body { padding: 25px; }
-        .plant-photo-large { height: 200px; width: 100%; background: #222; border-radius: 12px; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; font-size: 1rem; color: #555; }
-        .data-point { margin-bottom: 10px; }
-        .data-label { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; font-weight: bold; }
-        .modal-val { font-size: 1rem; color: #ffffff; font-weight: 700; }
+        .plant-photo-large { height: 100%; min-height: 250px; width: 100%; background: #111; border-radius: 12px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--border-color); }
+        
+        /* Metric Mini-Cards inside Profile */
+        .metric-card { background: #0b0e11; border: 1px solid var(--border-color); border-radius: 10px; padding: 15px; text-align: center; height: 100%; }
+        .metric-label { font-size: 0.7rem; color: #8b949e; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; }
+        .metric-val { font-size: 1.4rem; color: #ffffff; font-weight: 700; }
+        .detail-row { border-bottom: 1px solid #30363d; padding: 12px 0; display: flex; justify-content: space-between; align-items: center; }
+        .detail-row:last-child { border-bottom: none; }
+        .detail-label { color: #8b949e; font-size: 0.85rem; font-weight: bold; }
+        .detail-val { color: #fff; font-size: 0.95rem; font-weight: bold; text-align: right; }
     </style>
 </head>
 <body>
@@ -151,25 +160,70 @@
     </div>
 
     <div class="modal fade" id="plantModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalPlantTitle">TR-PH80-000</h5>
+                <div class="modal-header d-flex justify-content-between align-items-center">
+                    <div class="profile-title">
+                        <span id="modalPlantTitle">TR-PH80-000</span>
+                        <span id="modalBadgeStatus" class="profile-badge badge-healthy">Healthy</span>
+                    </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-5">
-                            <div class="plant-photo-large"><img id="modalPlantImg" src="" alt="Photo" style="width:100%; height:100%; object-fit: cover; border-radius:8px;"></div>
+                    <div class="row g-4">
+                        <div class="col-lg-5">
+                            <div class="plant-photo-large mb-3">
+                                <img id="modalPlantImg" src="" alt="Plant Photo" style="width:100%; height:100%; object-fit: cover;">
+                            </div>
+                            <div class="tech-card mb-0" style="padding: 15px;">
+                                <div class="detail-row" style="padding-top: 0;">
+                                    <span class="detail-label">Location (Table, Row)</span>
+                                    <span class="detail-val" id="modalLocation">--</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">QR Reference</span>
+                                    <span class="detail-val" id="modalQR" style="color: var(--accent-orange);">--</span>
+                                </div>
+                                <div class="detail-row" style="border-bottom: none; padding-bottom: 0;">
+                                    <span class="detail-label">Last Inspected</span>
+                                    <span class="detail-val" id="modalDate" style="color: var(--accent-blue);">--</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-7">
-                            <div class="data-point"><div class="data-label">QR Reference</div><div class="modal-val" id="modalQR" style="color: var(--accent-orange);">--</div></div>
-                            <div class="data-point"><div class="data-label">Status</div><div class="modal-val" id="modalPlantStatus">--</div></div>
-                            <div class="data-point"><div class="data-label">Location</div><div class="modal-val" id="modalLocation">--</div></div>
-                            <div class="data-point"><div class="data-label">Crown Diameter</div><div class="modal-val" id="modalCrown">--</div></div>
-                            <div class="data-point"><div class="data-label">Leaf Count</div><div class="modal-val" id="modalLeaf">--</div></div>
-                            <div class="data-point"><div class="data-label">Runners (YTD)</div><div class="modal-val" id="modalRunner">--</div></div>
-                            <div class="data-point"><div class="data-label">Last Scouted</div><div class="modal-val" id="modalDate" style="color: #8b949e; font-size: 0.85rem;">--</div></div>
+
+                        <div class="col-lg-7">
+                            <h5 style="font-size: 1rem; color: #fff; font-weight: bold; border-left: 3px solid var(--accent-red); padding-left: 10px; margin-bottom: 20px;">
+                                Vegetative Growth Metrics
+                            </h5>
+                            
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-4">
+                                    <div class="metric-card">
+                                        <div class="metric-label">Crown Diameter</div>
+                                        <div class="metric-val text-white"><span id="modalCrown">--</span><span style="font-size:1rem; color:#8b949e;"> mm</span></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="metric-card">
+                                        <div class="metric-label">Leaf Count</div>
+                                        <div class="metric-val text-white"><span id="modalLeaf">--</span></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="metric-card" style="border-color: var(--accent-blue);">
+                                        <div class="metric-label text-info">Total Runners</div>
+                                        <div class="metric-val text-info"><span id="modalRunner">--</span></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="tech-card">
+                                <div class="card-title">Plant History & Notes</div>
+                                <div style="color: #8b949e; font-size: 0.85rem; line-height: 1.6;">
+                                    This plant is currently in the <strong>Runner Production phase</strong>. 
+                                    Monitoring crown diameter is crucial to ensure the mother plant remains vigorous while producing new runners.
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -179,13 +233,14 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // โหลด Google Charts เพื่อใช้ Query
         google.charts.load('current', {'packages':['corechart']});
         google.charts.setOnLoadCallback(fetchPlantDatabase);
 
         let plantDB = {}; 
 
         function fetchPlantDatabase() {
-            // ⚠️ นำ Sheet ID จากขั้นตอนที่ 1 มาใส่ตรงนี้ ⚠️
+            // ⚠️ นำ Sheet ID มาใส่ตรงนี้ ⚠️
             const sheetID = '1yyJ724hBNOF69dTjgGpK_SvgR8fFqlMy4tOClpkWy-M'; 
             
             if(sheetID === '1yyJ724hBNOF69dTjgGpK_SvgR8fFqlMy4tOClpkWy-M') {
@@ -261,27 +316,42 @@
             }
 
             return `<div class="plant-thumbnail ${statusClass}" 
-                        onclick="openPlantModal('${plantId}', ${tableNum}, ${rowNum})" 
+                        onclick="openPlantProfile('${plantId}', ${tableNum}, ${rowNum})" 
                         title="${plantId}">
                         ${idNum.toString().padStart(3, '0')}
                     </div>`;
         }
 
-        function openPlantModal(plantId, tableNum, rowNum) {
+        // ฟังก์ชันอัปเดตเพื่อแสดงหน้า Plant Profile แบบละเอียด
+        function openPlantProfile(plantId, tableNum, rowNum) {
             let dbData = plantDB[plantId] || {}; 
 
+            // อัปเดตข้อมูลหัวข้อ
             document.getElementById('modalPlantTitle').innerText = plantId;
-            document.getElementById('modalQR').innerText = dbData.qr || 'N/A';
-            document.getElementById('modalPlantStatus').innerText = dbData.status || 'N/A';
-            document.getElementById('modalLocation').innerText = `Table ${tableNum}, Row ${rowNum}`;
-            document.getElementById('modalCrown').innerText = dbData.crown ? dbData.crown + ' mm' : 'N/A';
-            document.getElementById('modalLeaf').innerText = dbData.leaf || 'N/A';
-            document.getElementById('modalRunner').innerText = dbData.runner || 'N/A';
-            document.getElementById('modalDate').innerText = dbData.lastUpdate || 'N/A';
             
-            let imgEl = document.getElementById('modalPlantImg');
-            imgEl.src = dbData.photo || 'https://via.placeholder.com/200x300/222/8b949e?text=No+Photo';
+            // อัปเดตสถานะและสีของ Badge
+            let statusText = dbData.status || 'N/A';
+            let badgeEl = document.getElementById('modalBadgeStatus');
+            badgeEl.innerText = statusText;
+            badgeEl.className = 'profile-badge badge-healthy'; // ค่าตั้งต้น
+            if (statusText.includes('Sick') || statusText.includes('🟡')) badgeEl.className = 'profile-badge badge-sick';
+            if (statusText.includes('Dead') || statusText.includes('🔴')) badgeEl.className = 'profile-badge badge-dead';
 
+            // อัปเดตข้อมูลตำแหน่งและอ้างอิง
+            document.getElementById('modalLocation').innerText = `Table ${tableNum}, Row ${rowNum}`;
+            document.getElementById('modalQR').innerText = dbData.qr || 'N/A';
+            document.getElementById('modalDate').innerText = dbData.lastUpdate || 'No Record';
+            
+            // อัปเดตข้อมูลการเจริญเติบโต (ดึงเฉพาะตัวเลขมาแสดงเด่นๆ)
+            document.getElementById('modalCrown').innerText = dbData.crown || '--';
+            document.getElementById('modalLeaf').innerText = dbData.leaf || '--';
+            document.getElementById('modalRunner').innerText = dbData.runner || '--';
+            
+            // อัปเดตรูปภาพ
+            let imgEl = document.getElementById('modalPlantImg');
+            imgEl.src = dbData.photo || 'https://via.placeholder.com/600x400/111/8b949e?text=No+Photo+Uploaded';
+
+            // แสดงหน้าต่าง Profile
             var myModal = new Bootstrap.Modal(document.getElementById('plantModal'));
             myModal.show();
         }
