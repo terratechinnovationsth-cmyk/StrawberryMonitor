@@ -173,7 +173,8 @@
                     <div class="row g-4">
                         <div class="col-lg-5">
                             <div class="plant-photo-large mb-3">
-                                <img id="modalPlantImg" src="" alt="Plant Photo" style="width:100%; height:100%; object-fit: cover;">
+                                <img id="modalPlantImg" src="" alt="Plant Photo" style="width:100%; height:100%; object-fit: cover;" 
+                                onerror="this.onerror=null; this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22600%22%20height%3D%22400%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20600%20400%22%20preserveAspectRatio%3D%22none%22%3E%3Crect%20width%3D%22600%22%20height%3D%22400%22%20fill%3D%22%23111111%22%3E%3C%2Frect%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20fill%3D%22%238b949e%22%20font-size%3D%2224%22%20font-family%3D%22sans-serif%22%20text-anchor%3D%22middle%22%20dy%3D%22.3em%22%3ENo%20Photo%20Available%3C%2Ftext%3E%3C%2Fsvg%3E';">
                             </div>
                             <div class="tech-card mb-0" style="padding: 15px;">
                                 <div class="detail-row" style="padding-top: 0;">
@@ -239,42 +240,28 @@
 
         let plantDB = {}; 
 
+        // ตัวแปรเก็บรูปจำลอง Offline 
+        const FALLBACK_IMAGE_URL = 'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22600%22%20height%3D%22400%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20600%20400%22%20preserveAspectRatio%3D%22none%22%3E%3Crect%20width%3D%22600%22%20height%3D%22400%22%20fill%3D%22%23111111%22%3E%3C%2Frect%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20fill%3D%22%238b949e%22%20font-size%3D%2224%22%20font-family%3D%22sans-serif%22%20text-anchor%3D%22middle%22%20dy%3D%22.3em%22%3ENo%20Photo%20Available%3C%2Ftext%3E%3C%2Fsvg%3E';
+
         function fetchPlantDatabase() {
-            // ID ใหม่ที่คุณให้มา
             const sheetID = '1yyJ724hBNOF69dTjgGpK_SvgR8fFqlMy4tOClpkWy-M'; 
             
-            // ใช้ query ไปที่แท็บ Plant_Inventory
             const query = new google.visualization.Query(`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=Plant_Inventory&tq=select A,B,C,D,E,F,G,H,I,J`);
             
             query.send(res => {
-                // ระบบดักจับข้อผิดพลาด (ถ้าเข้าถึง Google Sheets ไม่ได้)
                 if (res.isError()) {
                     let errMsg = res.getDetailedMessage() || res.getMessage();
-                    console.error('Error in query: ' + errMsg);
-                    document.getElementById('dynamic-grid-container').innerHTML = `
-                        <div class="text-center" style="color: var(--accent-red); padding: 30px; border: 1px dashed var(--accent-red); border-radius: 8px;">
-                            <b style="font-size: 1.2rem;">❌ เกิดข้อผิดพลาดในการดึงข้อมูลจาก Google Sheets</b><br><br>
-                            <span style="color: #e4e6eb;">สาเหตุที่พบบ่อย:</span><br>
-                            1. ไฟล์ Google Sheets ของคุณยังไม่ได้ตั้งค่าแชร์เป็น <b>"ทุกคนที่มีลิงก์ (Anyone with the link)"</b><br>
-                            2. คุณอาจจะลืมสร้าง Sheet ย่อยที่ชื่อว่า <b>"Plant_Inventory"</b> (เช็กตัวพิมพ์เล็ก-ใหญ่)<br><br>
-                            <small style="color:#8b949e;">(ข้อมูลเชิงลึก: ${errMsg})</small>
-                        </div>`;
+                    document.getElementById('dynamic-grid-container').innerHTML = `<div class="text-center text-danger p-4">❌ Error: ${errMsg}</div>`;
                     return;
                 }
 
                 const data = res.getDataTable();
                 const rows = data.getNumberOfRows();
                 
-                // ระบบดักจับถ้าตารางว่างเปล่า
-                if (rows === 0) {
-                    document.getElementById('dynamic-grid-container').innerHTML = '<div class="text-center text-warning p-4">⚠️ เชื่อมต่อ Sheet สำเร็จ แต่ไม่พบข้อมูลใดๆ ในตาราง (ข้อมูลว่างเปล่า)</div>';
-                    return;
-                }
-                
                 for (let i = 0; i < rows; i++) {
                     let id = data.getFormattedValue(i, 0);
                     if(id) {
-                        id = id.trim(); // ตัดสเปซบาร์ส่วนเกินที่อาจเผลอพิมพ์ใน Sheet
+                        id = id.trim();
                         plantDB[id] = {
                             qr: data.getFormattedValue(i, 1),
                             table: data.getFormattedValue(i, 2),
@@ -335,11 +322,28 @@
                     </div>`;
         }
 
+        // ฟังก์ชันแปลงลิงก์ Google Drive ให้ใช้งานกับ <img> ได้จริง
+        function processImageUrl(url) {
+            if (!url || url.trim() === '') return FALLBACK_IMAGE_URL;
+            
+            // ตรวจจับลิงก์แบบเก่า (open?id=)
+            let matchOpen = url.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/);
+            if (matchOpen && matchOpen[1]) {
+                return 'https://drive.google.com/uc?export=view&id=' + matchOpen[1];
+            }
+            
+            // ตรวจจับลิงก์แบบใหม่ (file/d/ID/view)
+            let matchFile = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+            if (matchFile && matchFile[1]) {
+                return 'https://drive.google.com/uc?export=view&id=' + matchFile[1];
+            }
+
+            // ถ้ารูปไม่ใช่ลิงก์ Google Drive ก็ปล่อยผ่านตามปกติ
+            return url;
+        }
+
         function openPlantProfile(plantId, tableNum, rowNum) {
             let dbData = plantDB[plantId] || {}; 
-            
-            // เช็ก Data ใน Console (สำหรับกด F12 ดูเผื่อหาบั๊ก)
-            console.log("กำลังเปิดข้อมูลต้น: " + plantId, dbData);
 
             document.getElementById('modalPlantTitle').innerText = plantId;
             
@@ -354,13 +358,13 @@
             document.getElementById('modalQR').innerText = dbData.qr || 'N/A';
             document.getElementById('modalDate').innerText = dbData.lastUpdate || 'No Record';
             
-            // แสดงข้อมูล หากไม่มีให้แสดงขีดกลาง --
             document.getElementById('modalCrown').innerText = dbData.crown || '--';
             document.getElementById('modalLeaf').innerText = dbData.leaf || '--';
             document.getElementById('modalRunner').innerText = dbData.runner || '--';
             
-            let imgEl = document.getElementById('modalPlantImg');
-            imgEl.src = dbData.photo || 'https://placehold.co/600x400/111111/8b949e.png?text=No+Photo';
+            // อัปเดตรูปภาพโดยผ่านตัวกรองลิงก์ Google Drive ก่อน
+            let finalImageUrl = processImageUrl(dbData.photo);
+            document.getElementById('modalPlantImg').src = finalImageUrl;
 
             var myModal = new bootstrap.Modal(document.getElementById('plantModal'));
             myModal.show();
