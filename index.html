@@ -240,15 +240,11 @@
         let plantDB = {}; 
 
         function fetchPlantDatabase() {
-            // ⚠️ นำ Sheet ID มาใส่ตรงนี้ ⚠️
+            // ดึงข้อมูลผ่าน ID ที่ระบุ
             const sheetID = '1yyJ724hBNOF69dTjgGpK_SvgR8fFqlMy4tOClpkWy-M'; 
             
-            if(sheetID === '1yyJ724hBNOF69dTjgGpK_SvgR8fFqlMy4tOClpkWy-M') {
-                renderTable(1);
-                return;
-            }
-
-            const query = new google.visualization.Query(`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tq=select A,B,C,D,E,F,G,H,I,J`);
+            // ระบุชื่อ Sheet ย่อย (Plant_Inventory) ให้ชัดเจน ป้องกันการดึงผิดหน้า
+            const query = new google.visualization.Query(`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=Plant_Inventory&tq=select A,B,C,D,E,F,G,H,I,J`);
             
             query.send(res => {
                 if (res.isError()) {
@@ -260,18 +256,20 @@
                 const rows = data.getNumberOfRows();
                 
                 for (let i = 0; i < rows; i++) {
-                    let id = data.getValue(i, 0);
+                    // ใช้ getFormattedValue เพื่อป้องกันปัญหาการอ่านตัวเลขแล้วได้ค่าเป็น Null
+                    let id = data.getFormattedValue(i, 0);
                     if(id) {
+                        id = id.trim(); // ตัดสเปซบาร์ส่วนเกินออก
                         plantDB[id] = {
-                            qr: data.getValue(i, 1),
-                            table: data.getValue(i, 2),
-                            row: data.getValue(i, 3),
-                            status: data.getValue(i, 4),
-                            crown: data.getValue(i, 5),
-                            leaf: data.getValue(i, 6),
-                            runner: data.getValue(i, 7),
+                            qr: data.getFormattedValue(i, 1),
+                            table: data.getFormattedValue(i, 2),
+                            row: data.getFormattedValue(i, 3),
+                            status: data.getFormattedValue(i, 4),
+                            crown: data.getFormattedValue(i, 5),
+                            leaf: data.getFormattedValue(i, 6),
+                            runner: data.getFormattedValue(i, 7),
                             lastUpdate: data.getFormattedValue(i, 8),
-                            photo: data.getValue(i, 9)
+                            photo: data.getFormattedValue(i, 9)
                         };
                     }
                 }
@@ -322,36 +320,29 @@
                     </div>`;
         }
 
-        // ฟังก์ชันอัปเดตเพื่อแสดงหน้า Plant Profile แบบละเอียด
         function openPlantProfile(plantId, tableNum, rowNum) {
             let dbData = plantDB[plantId] || {}; 
 
-            // อัปเดตข้อมูลหัวข้อ
             document.getElementById('modalPlantTitle').innerText = plantId;
             
-            // อัปเดตสถานะและสีของ Badge
             let statusText = dbData.status || 'N/A';
             let badgeEl = document.getElementById('modalBadgeStatus');
             badgeEl.innerText = statusText;
-            badgeEl.className = 'profile-badge badge-healthy'; // ค่าตั้งต้น
+            badgeEl.className = 'profile-badge badge-healthy'; 
             if (statusText.includes('Sick') || statusText.includes('🟡')) badgeEl.className = 'profile-badge badge-sick';
             if (statusText.includes('Dead') || statusText.includes('🔴')) badgeEl.className = 'profile-badge badge-dead';
 
-            // อัปเดตข้อมูลตำแหน่งและอ้างอิง
             document.getElementById('modalLocation').innerText = `Table ${tableNum}, Row ${rowNum}`;
             document.getElementById('modalQR').innerText = dbData.qr || 'N/A';
             document.getElementById('modalDate').innerText = dbData.lastUpdate || 'No Record';
             
-            // อัปเดตข้อมูลการเจริญเติบโต
             document.getElementById('modalCrown').innerText = dbData.crown || '--';
             document.getElementById('modalLeaf').innerText = dbData.leaf || '--';
             document.getElementById('modalRunner').innerText = dbData.runner || '--';
             
-            // อัปเดตรูปภาพ (เปลี่ยนจาก via.placeholder เป็น placehold.co เพื่อป้องกันเน็ตเวิร์กบล็อก)
             let imgEl = document.getElementById('modalPlantImg');
             imgEl.src = dbData.photo || 'https://placehold.co/600x400/111111/8b949e.png?text=No+Photo';
 
-            // แสดงหน้าต่าง Profile (ตัว b พิมพ์เล็กถูกต้องแล้ว)
             var myModal = new bootstrap.Modal(document.getElementById('plantModal'));
             myModal.show();
         }
