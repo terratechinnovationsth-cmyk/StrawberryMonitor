@@ -342,16 +342,16 @@
             document.getElementById('modalQR').innerText = dbData.qr || 'N/A';
             document.getElementById('modalDate').innerText = dbData.lastUpdate || 'No Record';
             
-            // อัปเดตข้อมูลการเจริญเติบโต (ดึงเฉพาะตัวเลขมาแสดงเด่นๆ)
+            // อัปเดตข้อมูลการเจริญเติบโต
             document.getElementById('modalCrown').innerText = dbData.crown || '--';
             document.getElementById('modalLeaf').innerText = dbData.leaf || '--';
             document.getElementById('modalRunner').innerText = dbData.runner || '--';
             
-            // อัปเดตรูปภาพ
+            // อัปเดตรูปภาพ (เปลี่ยนจาก via.placeholder เป็น placehold.co เพื่อป้องกันเน็ตเวิร์กบล็อก)
             let imgEl = document.getElementById('modalPlantImg');
-            imgEl.src = dbData.photo || 'https://via.placeholder.com/600x400/111/8b949e?text=No+Photo+Uploaded';
+            imgEl.src = dbData.photo || 'https://placehold.co/600x400/111111/8b949e.png?text=No+Photo';
 
-            // แสดงหน้าต่าง Profile (แก้ Bug ตัวพิมพ์ใหญ่ตรงนี้)
+            // แสดงหน้าต่าง Profile (ตัว b พิมพ์เล็กถูกต้องแล้ว)
             var myModal = new bootstrap.Modal(document.getElementById('plantModal'));
             myModal.show();
         }
