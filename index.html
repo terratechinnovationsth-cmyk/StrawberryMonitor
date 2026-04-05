@@ -351,8 +351,8 @@
             let imgEl = document.getElementById('modalPlantImg');
             imgEl.src = dbData.photo || 'https://via.placeholder.com/600x400/111/8b949e?text=No+Photo+Uploaded';
 
-            // แสดงหน้าต่าง Profile
-            var myModal = new Bootstrap.Modal(document.getElementById('plantModal'));
+            // แสดงหน้าต่าง Profile (แก้ Bug ตัวพิมพ์ใหญ่ตรงนี้)
+            var myModal = new bootstrap.Modal(document.getElementById('plantModal'));
             myModal.show();
         }
     </script>
