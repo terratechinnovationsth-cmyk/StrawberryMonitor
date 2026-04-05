@@ -240,26 +240,41 @@
         let plantDB = {}; 
 
         function fetchPlantDatabase() {
-            // ดึงข้อมูลผ่าน ID ที่ระบุ
+            // ID ใหม่ที่คุณให้มา
             const sheetID = '1yyJ724hBNOF69dTjgGpK_SvgR8fFqlMy4tOClpkWy-M'; 
             
-            // ระบุชื่อ Sheet ย่อย (Plant_Inventory) ให้ชัดเจน ป้องกันการดึงผิดหน้า
+            // ใช้ query ไปที่แท็บ Plant_Inventory
             const query = new google.visualization.Query(`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=Plant_Inventory&tq=select A,B,C,D,E,F,G,H,I,J`);
             
             query.send(res => {
+                // ระบบดักจับข้อผิดพลาด (ถ้าเข้าถึง Google Sheets ไม่ได้)
                 if (res.isError()) {
-                    console.error('Error in query: ' + res.getMessage() + ' ' + res.getDetailedMessage());
-                    renderTable(1);
+                    let errMsg = res.getDetailedMessage() || res.getMessage();
+                    console.error('Error in query: ' + errMsg);
+                    document.getElementById('dynamic-grid-container').innerHTML = `
+                        <div class="text-center" style="color: var(--accent-red); padding: 30px; border: 1px dashed var(--accent-red); border-radius: 8px;">
+                            <b style="font-size: 1.2rem;">❌ เกิดข้อผิดพลาดในการดึงข้อมูลจาก Google Sheets</b><br><br>
+                            <span style="color: #e4e6eb;">สาเหตุที่พบบ่อย:</span><br>
+                            1. ไฟล์ Google Sheets ของคุณยังไม่ได้ตั้งค่าแชร์เป็น <b>"ทุกคนที่มีลิงก์ (Anyone with the link)"</b><br>
+                            2. คุณอาจจะลืมสร้าง Sheet ย่อยที่ชื่อว่า <b>"Plant_Inventory"</b> (เช็กตัวพิมพ์เล็ก-ใหญ่)<br><br>
+                            <small style="color:#8b949e;">(ข้อมูลเชิงลึก: ${errMsg})</small>
+                        </div>`;
                     return;
                 }
+
                 const data = res.getDataTable();
                 const rows = data.getNumberOfRows();
                 
+                // ระบบดักจับถ้าตารางว่างเปล่า
+                if (rows === 0) {
+                    document.getElementById('dynamic-grid-container').innerHTML = '<div class="text-center text-warning p-4">⚠️ เชื่อมต่อ Sheet สำเร็จ แต่ไม่พบข้อมูลใดๆ ในตาราง (ข้อมูลว่างเปล่า)</div>';
+                    return;
+                }
+                
                 for (let i = 0; i < rows; i++) {
-                    // ใช้ getFormattedValue เพื่อป้องกันปัญหาการอ่านตัวเลขแล้วได้ค่าเป็น Null
                     let id = data.getFormattedValue(i, 0);
                     if(id) {
-                        id = id.trim(); // ตัดสเปซบาร์ส่วนเกินออก
+                        id = id.trim(); // ตัดสเปซบาร์ส่วนเกินที่อาจเผลอพิมพ์ใน Sheet
                         plantDB[id] = {
                             qr: data.getFormattedValue(i, 1),
                             table: data.getFormattedValue(i, 2),
@@ -322,6 +337,9 @@
 
         function openPlantProfile(plantId, tableNum, rowNum) {
             let dbData = plantDB[plantId] || {}; 
+            
+            // เช็ก Data ใน Console (สำหรับกด F12 ดูเผื่อหาบั๊ก)
+            console.log("กำลังเปิดข้อมูลต้น: " + plantId, dbData);
 
             document.getElementById('modalPlantTitle').innerText = plantId;
             
@@ -336,6 +354,7 @@
             document.getElementById('modalQR').innerText = dbData.qr || 'N/A';
             document.getElementById('modalDate').innerText = dbData.lastUpdate || 'No Record';
             
+            // แสดงข้อมูล หากไม่มีให้แสดงขีดกลาง --
             document.getElementById('modalCrown').innerText = dbData.crown || '--';
             document.getElementById('modalLeaf').innerText = dbData.leaf || '--';
             document.getElementById('modalRunner').innerText = dbData.runner || '--';
