@@ -116,11 +116,10 @@
                 <div class="modal-body">
                     <div class="row g-4">
                         <div class="col-lg-5">
-                            <div class="plant-photo-large mb-3"><img id="modalPlantImg" src="" alt="Photo" style="width:100%; height:100%; object-fit: cover;"></div>
+                            <div class="plant-photo-large mb-3"><img id="modalPlantImg" src="" alt="Photo Loading..." style="width:100%; height:100%; object-fit: cover; color: #555; font-size: 0.8rem; text-align: center;"></div>
                             <div class="tech-card mb-0">
                                 <div class="detail-row"><span class="detail-label">Staff</span><span class="detail-val" id="modalStaff">--</span></div>
                                 <div class="detail-row"><span class="detail-label">Pest Report</span><span class="detail-val" id="modalPest">--</span></div>
-                                <div class="detail-row"><span class="detail-label">Device Used</span><span class="detail-val" id="modalDevice">--</span></div>
                                 <div class="detail-row" style="border:none;"><span class="detail-label">Last Inspection</span><span class="detail-val text-info" id="modalDate">--</span></div>
                             </div>
                         </div>
@@ -146,11 +145,11 @@
 
         let plantDB = {}; 
         
-        // ⚠️ ID ของไฟล์ TerraTech_Database (ไฟล์ใหม่)
+        // ⚠️ ID ของไฟล์ TerraTech_Database (ไฟล์ใหม่ของคุณ)
         const SHEET_ID = '1AjDWcZX5tWvjI3bm2ylYv3xixGz8eLRkv_2gmywaZHY'; 
 
         function fetchPlantDatabase() {
-            // บังคับดึงข้อมูลจาก sheet=Log และเอาคอลัมน์ A ถึง M
+            // ดึงข้อมูลจากแผ่นงาน Log คอลัมน์ A:M
             const queryUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=Log&range=A:M`;
             const query = new google.visualization.Query(queryUrl);
             
@@ -170,7 +169,7 @@
 
                 plantDB = {};
 
-                // ฟังก์ชันดึงค่าแบบปลอดภัย (กันคอลัมน์แหว่ง)
+                // ฟังก์ชันดึงค่าแบบปลอดภัย
                 let safeGetStr = (r, c) => {
                     if (cols > c) {
                         let val = data.getFormattedValue(r, c);
@@ -180,14 +179,12 @@
                 };
 
                 for (let i = 0; i < rows; i++) {
-                    let rawID = safeGetStr(i, 2); // คอลัมน์ C (Index 2)
+                    let rawID = safeGetStr(i, 2); // คอลัมน์ C: Plant ID
                     
-                    // ข้ามหัวตาราง หรือแถวว่าง
                     if(rawID === "--" || rawID === "" || rawID.includes("Plant ID") || rawID.includes("รหัส")) continue;
                     
-                    // ลบช่องว่าง และทำเป็นพิมพ์ใหญ่ เผื่อตอนสแกนติดช่องว่างมา
                     let pid = rawID.trim().toUpperCase(); 
-                    let health = safeGetStr(i, 6); // คอลัมน์ G (สุขภาพ)
+                    let health = safeGetStr(i, 6); // คอลัมน์ G: สุขภาพ
 
                     plantDB[pid] = {
                         date: safeGetStr(i, 0),
@@ -199,8 +196,7 @@
                         size: safeGetStr(i, 7),
                         pest: safeGetStr(i, 8),
                         note: safeGetStr(i, 9),
-                        photo: safeGetStr(i, 10),
-                        device: safeGetStr(i, 11)
+                        photo: safeGetStr(i, 10), // ลิงก์รูปภาพจากคอลัมน์ K
                     };
 
                     if(i >= rows - 5) {
@@ -225,7 +221,7 @@
                 }
                 
                 document.getElementById('last-sync').innerText = new Date().toLocaleTimeString();
-                document.getElementById('activity-log').innerHTML = logHtml || "No recent activity found on sheet 'Log'.";
+                document.getElementById('activity-log').innerHTML = logHtml || "No recent activity found.";
 
                 document.getElementById('bar-green').style.width = (hStats.green/totalPlants*100) + "%";
                 document.getElementById('bar-orange').style.width = (hStats.orange/totalPlants*100) + "%";
@@ -236,6 +232,33 @@
 
                 renderTable(1);
             });
+        }
+
+        // --- เพิ่มฟังก์ชันแปลงลิงก์ Google Drive ขั้นสูง ---
+        function getDriveImageUrl(url) {
+            if (!url || url === "--" || url === "") return "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/No_image_available.svg/600px-No_image_available.svg.png";
+            
+            // ถ้าเป็นลิงก์ uc?id= อยู่แล้ว ไม่ต้องแปลง
+            if (url.includes('drive.google.com/uc')) return url;
+
+            let fileId = '';
+            // รองรับรูปแบบ /file/d/FILE_ID/
+            const matchD = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+            if (matchD && matchD[1]) {
+                fileId = matchD[1];
+            } else {
+                // รองรับรูปแบบ id=FILE_ID
+                const matchId = url.match(/id=([a-zA-Z0-9_-]+)/);
+                if (matchId && matchId[1]) fileId = matchId[1];
+            }
+
+            if (fileId) {
+                // แปลงเป็น Direct Link ที่แสดงผลใน <img> ได้ทันที
+                return `https://drive.google.com/uc?export=view&id=${fileId}`;
+            }
+            
+            // หากแปลงไม่ได้ ส่งลิงก์เดิมกลับไป
+            return url;
         }
 
         function renderTable(tableNum) {
@@ -261,14 +284,7 @@
 
         function openProfile(pid) {
             let d = plantDB[pid];
-            
-            // 🚨 ระบบตรวจสอบสาเหตุ (Debug Alert) ยังคงอยู่เพื่อให้แก้ไขง่าย
-            if(!d) {
-                let foundKeys = Object.keys(plantDB);
-                let keyStr = foundKeys.length > 0 ? foundKeys.slice(0, 15).join(", ") + " ..." : "ไม่มีข้อมูลในแผ่นงานชื่อ 'Log'";
-                alert(`❌ ไม่พบข้อมูล: ${pid}\n\nระบบอ่านรหัสจากคอลัมน์ C ในแผ่นงาน 'Log' มาได้ดังนี้:\n[ ${keyStr} ]\n\n📌 โปรดตรวจสอบว่าแผ่นงานด้านล่างของ Google Sheet เปลี่ยนชื่อเป็น Log หรือยังครับ`);
-                return;
-            }
+            if(!d) return alert("❌ ไม่พบข้อมูลล่าสุดของ " + pid);
 
             document.getElementById('modalPlantTitle').innerText = pid;
             document.getElementById('modalStaff').innerText = d.staff;
@@ -278,13 +294,19 @@
             document.getElementById('modalFlower').innerText = d.flower;
             document.getElementById('modalRunner').innerText = d.runner;
             document.getElementById('modalSize').innerText = d.size;
-            document.getElementById('modalDevice').innerText = d.device;
             document.getElementById('modalNote').innerText = d.note || "-";
             
-            let rawPhoto = d.photo || "";
-            document.getElementById('modalPlantImg').src = rawPhoto.includes("id=") 
-                ? rawPhoto.replace("open?id=", "uc?export=view&id=") 
-                : rawPhoto;
+            // ดึงลิงก์รูปภาพมาแปลงเป็น Direct Link
+            let rawPhotoLink = d.photo || "";
+            let modalImg = document.getElementById('modalPlantImg');
+            
+            // แสดง Loading ก๊อกสองในรูป
+            modalImg.src = "https://row.sc.gov/images/loading.gif"; 
+
+            // แปลงลิงก์และใส่แหล่งที่มาใหม่
+            setTimeout(() => {
+                modalImg.src = getDriveImageUrl(rawPhotoLink);
+            }, 300); // หน่วงเวลาเล็กน้อยเพื่อให้ดูมีมิติการโหลด
 
             let b = document.getElementById('modalBadgeStatus');
             b.innerText = d.health;
