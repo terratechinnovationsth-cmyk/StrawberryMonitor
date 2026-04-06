@@ -43,11 +43,10 @@
         .detail-val { color: #fff; font-size: 0.95rem; font-weight: bold; text-align: right; }
         
         /* สไตล์ตารางประวัติย้อนหลังใน Modal */
-        .table-dark-custom { width: 100%; text-align: left; border-collapse: collapse; color: #8b949e; }
-        .table-dark-custom th { border-bottom: 1px solid var(--border-color); padding: 8px; font-size: 0.75rem; color: #fff; text-transform: uppercase; position: sticky; top: 0; background: var(--card-bg); }
-        .table-dark-custom td { border-bottom: 1px solid #222; padding: 8px; font-size: 0.8rem; }
-        /* สไตล์ Scrollbar สำหรับตารางประวัติ */
-        #modalHistoryTimeline::-webkit-scrollbar { width: 6px; }
+        .table-dark-custom { width: 100%; text-align: left; border-collapse: collapse; color: #8b949e; min-width: 400px; }
+        .table-dark-custom th { border-bottom: 1px solid var(--border-color); padding: 8px; font-size: 0.75rem; color: #fff; text-transform: uppercase; position: sticky; top: 0; background: var(--card-bg); z-index: 1;}
+        .table-dark-custom td { border-bottom: 1px solid #222; padding: 8px; font-size: 0.8rem; vertical-align: middle;}
+        #modalHistoryTimeline::-webkit-scrollbar { width: 6px; height: 6px;}
         #modalHistoryTimeline::-webkit-scrollbar-track { background: #111; border-radius: 4px; }
         #modalHistoryTimeline::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
     </style>
@@ -142,20 +141,15 @@
                                 <div class="col-md-4"><div class="metric-card"><div class="metric-label">Flowers</div><div class="metric-val" id="modalFlower">--</div></div></div>
                                 <div class="col-md-4"><div class="metric-card" style="border-color: var(--accent-blue);"><div class="metric-label">Runners</div><div class="metric-val" id="modalRunner">--</div></div></div>
                             </div>
-                            <div class="tech-card"><div class="card-title">Canopy & Notes</div><div class="detail-row"><span class="detail-label">Grade</span><span class="detail-val" id="modalSize">--</span></div><div id="modalNote" style="color: #8b949e; font-size: 0.85rem; padding-top:10px;">--</div></div>
-                        </div>
-                    </div>
-                    
-                    <div class="row mt-4">
-                        <div class="col-12">
+                            <div class="tech-card mb-3"><div class="card-title">Canopy & Notes</div><div class="detail-row"><span class="detail-label">Grade</span><span class="detail-val" id="modalSize">--</span></div><div id="modalNote" style="color: #8b949e; font-size: 0.85rem; padding-top:10px;">--</div></div>
+                            
                             <div class="tech-card mb-0" style="padding: 15px;">
                                 <div class="card-title mb-2">Lifecycle & Inspection History</div>
-                                <div id="modalHistoryTimeline" style="max-height: 250px; overflow-y: auto;">
+                                <div id="modalHistoryTimeline" style="max-height: 250px; overflow-y: auto; overflow-x: auto;">
                                     </div>
                             </div>
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
@@ -167,8 +161,6 @@
         google.charts.setOnLoadCallback(fetchPlantDatabase);
 
         let plantDB = {}; 
-        
-        // ⚠️ ID ของไฟล์ TerraTech_Database
         const SHEET_ID = '1AjDWcZX5tWvjI3bm2ylYv3xixGz8eLRkv_2gmywaZHY'; 
 
         function fetchPlantDatabase() {
@@ -199,7 +191,6 @@
                     return "--";
                 };
 
-                // วนลูปอ่านข้อมูลทุกบรรทัด
                 for (let i = 0; i < rows; i++) {
                     let rawID = safeGetStr(i, 2); 
                     if(rawID === "--" || rawID === "" || rawID.includes("Plant ID") || rawID.includes("รหัส")) continue;
@@ -207,12 +198,10 @@
                     let pid = rawID.trim().toUpperCase(); 
                     let health = safeGetStr(i, 6); 
 
-                    // --- การเปลี่ยนแปลงส่วนที่ 1: ตรวจสอบและสร้างอาร์เรย์เก็บประวัติ ---
                     if (!plantDB[pid]) {
-                        plantDB[pid] = { history: [] }; // สร้างกล่องเก็บประวัติถ้ายังไม่เคยมี
+                        plantDB[pid] = { history: [] }; 
                     }
 
-                    // สร้างชุดข้อมูลของรอบการสแกนนั้นๆ
                     let record = {
                         date: safeGetStr(i, 0),
                         staff: safeGetStr(i, 1),
@@ -227,19 +216,14 @@
                         device: safeGetStr(i, 11)
                     };
 
-                    // โยนข้อมูลรอบนี้เข้าไปในประวัติ
                     plantDB[pid].history.push(record);
-
-                    // อัปเดตข้อมูลล่าสุด (ข้อมูลบรรทัดล่างสุดจะเป็นข้อมูลล่าสุดเสมอ)
                     Object.assign(plantDB[pid], record);
-                    // --------------------------------------------------------
 
                     if(i >= rows - 5) {
                         logHtml = `<div>> [${safeGetStr(i,0)}] ${pid} updated by ${safeGetStr(i,1)}</div>` + logHtml;
                     }
                 }
 
-                // คำนวณสรุปหน้าจอหลัก (ใช้ข้อมูลล่าสุด)
                 let uniquePids = Object.keys(plantDB);
                 uniquePids.forEach(pid => {
                     let d = plantDB[pid];
@@ -286,6 +270,23 @@
             return url;
         }
 
+        // ฟังก์ชันสำหรับกดปุ่มเปลี่ยนรูป (ไม่เปิด Pop-up ใหม่)
+        function changeMainImage(photoUrl) {
+            let modalImg = document.getElementById('modalPlantImg');
+            
+            // ใส่รูปโหลดดิ้งระหว่างรอภาพใหม่
+            modalImg.src = "https://row.sc.gov/images/loading.gif";
+            
+            setTimeout(() => {
+                let newSrc = getDriveImageUrl(photoUrl);
+                if (newSrc) {
+                    modalImg.src = newSrc;
+                } else {
+                    modalImg.src = "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/No_image_available.svg/600px-No_image_available.svg.png";
+                }
+            }, 200); // หน่วงเวลาเล็กน้อยให้ดูเนียนตา
+        }
+
         function renderTable(tableNum) {
             const container = document.getElementById('dynamic-grid-container');
             let start = (parseInt(tableNum) - 1) * 70 + 1;
@@ -311,7 +312,6 @@
             let d = plantDB[pid];
             if(!d) return alert("❌ ไม่พบข้อมูล: " + pid);
 
-            // ข้อมูลล่าสุด
             document.getElementById('modalPlantTitle').innerText = pid;
             document.getElementById('modalStaff').innerText = d.staff;
             document.getElementById('modalPest').innerText = d.pest;
@@ -336,28 +336,31 @@
             b.innerText = d.health;
             b.className = 'profile-badge ' + (d.health==="ดีมาก"?"badge-healthy":d.health==="วิกฤต"?"badge-dead":"badge-sick");
 
-            // --- การเปลี่ยนแปลงส่วนที่ 2: สร้างตารางประวัติย้อนหลัง ---
-            let historyHtml = '<table class="table-dark-custom"><thead><tr><th>Date</th><th>Staff</th><th>Leaf</th><th>Flower</th><th>Runner</th><th>Health</th><th>Note</th></tr></thead><tbody>';
-            
-            // กลับด้าน Array เพื่อให้ข้อมูลที่สแกนล่าสุดอยู่ด้านบนสุดของตาราง
+            // สร้างตารางประวัติพร้อมปุ่ม Pic
+            let historyHtml = '<table class="table-dark-custom"><thead><tr><th>Date</th><th>Staff</th><th>Lf</th><th>Fl</th><th>Rn</th><th>Health</th><th>Note</th><th>Img</th></tr></thead><tbody>';
             let reversedHistory = [...d.history].reverse(); 
             
             reversedHistory.forEach(record => {
                 let hColor = record.health === "ดีมาก" ? "var(--accent-green)" : (record.health === "วิกฤต" ? "var(--accent-red)" : "var(--accent-orange)");
+                
+                // เช็คว่าแถวนี้มีรูปไหม ถ้ามีให้สร้างปุ่ม Pic ถ้าไม่มีให้ขีด -
+                let picBtn = (record.photo && record.photo !== "--") 
+                    ? `<button class="btn btn-sm btn-outline-info py-0 px-2" style="font-size:0.65rem;" onclick="changeMainImage('${record.photo}')">Pic</button>` 
+                    : `-`;
+
                 historyHtml += `<tr>
-                    <td>${record.date.split(" ")[0]} <span style="font-size:0.65rem; color:#555;">${record.date.split(" ")[1]||''}</span></td>
+                    <td style="white-space:nowrap;">${record.date.split(" ")[0]}</td>
                     <td>${record.staff}</td>
                     <td>${record.leaf}</td>
                     <td>${record.flower}</td>
                     <td>${record.runner}</td>
                     <td style="color: ${hColor}; font-weight: bold;">${record.health}</td>
-                    <td>${record.note || '-'}</td>
+                    <td style="max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${record.note || '-'}">${record.note || '-'}</td>
+                    <td>${picBtn}</td>
                 </tr>`;
             });
             historyHtml += '</tbody></table>';
-            
             document.getElementById('modalHistoryTimeline').innerHTML = historyHtml;
-            // ------------------------------------------------------
 
             new bootstrap.Modal(document.getElementById('plantModal')).show();
         }
