@@ -66,10 +66,10 @@
         </h2>
 
         <div class="row">
-            <div class="col-md-3"><div class="tech-card text-center"><div class="card-title">Soil Moisture</div><div class="data-val" style="color: #555;">N/A</div><div class="data-sub">Status: Pending</div></div></div>
-            <div class="col-md-3"><div class="tech-card text-center"><div class="card-title">VPD (Evaporation)</div><div class="data-val" style="color: #555;">N/A</div><div class="data-sub">Target: 0.6 - 1.2 kPa</div></div></div>
-            <div class="col-md-3"><div class="tech-card text-center"><div class="card-title">Chill Hours</div><div class="data-val" style="color: #555;">N/A</div><div class="data-sub">Accumulated (Season)</div></div></div>
-            <div class="col-md-3"><div class="tech-card text-center"><div class="card-title">Photoperiod Trend</div><div class="data-val" style="color: #555;">N/A</div><div class="data-sub">Inducing Runner Growth</div></div></div>
+            <div class="col-md-3"><div class="tech-card text-center"><div class="card-title">Plant Count</div><div class="data-val">210</div><div class="data-sub">Registered Pots</div></div></div>
+            <div class="col-md-3"><div class="tech-card text-center"><div class="card-title">Total Flowers</div><div id="total-flowers" class="data-val">--</div><div class="data-sub">Current Production</div></div></div>
+            <div class="col-md-3"><div class="tech-card text-center"><div class="card-title">Total Runners</div><div id="total-runners" class="data-val">--</div><div class="data-sub">Propagation Potential</div></div></div>
+            <div class="col-md-3"><div class="tech-card text-center"><div class="card-title">Average Leaves</div><div id="avg-leaves" class="data-val">--</div><div class="data-sub">Growth Index</div></div></div>
         </div>
 
         <div class="row">
@@ -85,9 +85,9 @@
                             </select>
                         </div>
                         <div class="d-flex gap-2">
-                            <span class="btn btn-sm btn-outline-success" style="font-size: 0.75rem; pointer-events: none;">🟢 Healthy</span>
-                            <span class="btn btn-sm btn-outline-warning" style="font-size: 0.75rem; pointer-events: none;">🟡 Sick</span>
-                            <span class="btn btn-sm btn-outline-danger" style="font-size: 0.75rem; pointer-events: none;">🔴 Dead</span>
+                            <span class="btn btn-sm btn-outline-success" style="font-size: 0.75rem; pointer-events: none;">🟢 Good</span>
+                            <span class="btn btn-sm btn-outline-warning" style="font-size: 0.75rem; pointer-events: none;">🟡 Sick/Weak</span>
+                            <span class="btn btn-sm btn-outline-danger" style="font-size: 0.75rem; pointer-events: none;">🔴 Critical</span>
                         </div>
                     </div>
                     
@@ -101,71 +101,35 @@
         <div class="row">
             <div class="col-md-8">
                 <div class="tech-card">
-                    <div class="card-title d-flex justify-content-between align-items-center">
-                        <span>Runner Production Chart (Target: 1,500)</span>
-                    </div>
-                    <div style="height: 150px; background: rgba(255,255,255,0.02); border: 1px dashed var(--border-color); display: flex; align-items: center; justify-content: center; color: #8b949e;">
-                        [ Chart: Cumulative Runners Harvested per Week ]
+                    <div class="card-title">System Activity Log</div>
+                    <div style="height: 150px; overflow-y: auto; color: #8b949e; font-size: 0.85rem;" id="activity-log">
+                        Waiting for data...
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="tech-card" style="height: 100%;">
                     <div class="card-title">Plant Health Index</div>
-                    <div class="progress-stack mb-3">
-                        <div style="width: 92%; background: var(--accent-green);"></div>
-                        <div style="width: 5%; background: var(--accent-orange);"></div>
-                        <div style="width: 3%; background: var(--accent-red);"></div>
+                    <div class="progress-stack mb-3" id="health-bar-stack">
+                        <div id="bar-green" style="width: 0%; background: var(--accent-green);"></div>
+                        <div id="bar-yellow" style="width: 0%; background: var(--accent-orange);"></div>
+                        <div id="bar-red" style="width: 0%; background: var(--accent-red);"></div>
                     </div>
-                    <div class="d-flex justify-content-between data-sub mb-2"><span><span class="status-dot" style="background: var(--accent-green);"></span>Healthy (195)</span><span>92%</span></div>
-                    <div class="d-flex justify-content-between data-sub mb-2"><span><span class="status-dot" style="background: var(--accent-orange);"></span>Recovering (10)</span><span>5%</span></div>
-                    <div class="d-flex justify-content-between data-sub mb-3"><span><span class="status-dot" style="background: var(--accent-red);"></span>Sick/Loss (5)</span><span>3%</span></div>
-                    <div class="data-sub fw-bold">Avg Crown: <span class="text-white">15.2 mm</span> | Avg Leaf: <span class="text-white">6</span></div>
+                    <div class="data-sub mb-2">Good: <span id="count-green" class="text-white">--</span></div>
+                    <div class="data-sub mb-2">Sick/Weak: <span id="count-yellow" class="text-white">--</span></div>
+                    <div class="data-sub mb-3">Critical: <span id="count-red" class="text-white">--</span></div>
                 </div>
             </div>
         </div>
-
-        <div class="row">
-            <div class="col-12">
-                <div class="tech-card">
-                    <div class="card-title">Annual Lifecycle Stage (Chiang Mai)</div>
-                    <div class="d-flex justify-content-between text-center mt-3" style="position: relative;">
-                        <div style="position: absolute; top: 20px; left: 10%; right: 10%; height: 2px; background: var(--border-color); z-index: 0;"></div>
-                        
-                        <div style="z-index: 1; width: 25%;">
-                            <div style="height: 40px; width: 40px; border-radius: 50%; background: var(--accent-green); margin: 0 auto; line-height: 40px; font-weight: bold; border: 4px solid var(--card-bg);">1</div>
-                            <div class="mt-2 fw-bold text-white" style="font-size: 0.85rem;">Mother Plant Care</div>
-                            <div class="data-sub">Mar - May</div>
-                        </div>
-                        <div style="z-index: 1; width: 25%;">
-                            <div style="height: 40px; width: 40px; border-radius: 50%; background: var(--accent-blue); margin: 0 auto; line-height: 40px; font-weight: bold; border: 4px solid var(--card-bg); box-shadow: 0 0 10px var(--accent-blue);">2</div>
-                            <div class="mt-2 fw-bold text-white" style="font-size: 0.85rem;">Runner Production</div>
-                            <div class="data-sub">Jun - Aug (Current)</div>
-                        </div>
-                        <div style="z-index: 1; width: 25%;">
-                            <div style="height: 40px; width: 40px; border-radius: 50%; background: #30363d; margin: 0 auto; line-height: 40px; font-weight: bold; border: 4px solid var(--card-bg); color: #8b949e;">3</div>
-                            <div class="mt-2 fw-bold" style="font-size: 0.85rem; color: #8b949e;">Flower Induction</div>
-                            <div class="data-sub">Sep - Oct</div>
-                        </div>
-                        <div style="z-index: 1; width: 25%;">
-                            <div style="height: 40px; width: 40px; border-radius: 50%; background: #30363d; margin: 0 auto; line-height: 40px; font-weight: bold; border: 4px solid var(--card-bg); color: #8b949e;">4</div>
-                            <div class="mt-2 fw-bold" style="font-size: 0.85rem; color: #8b949e;">Fruiting & Harvest</div>
-                            <div class="data-sub">Nov - Feb</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
     </div>
 
     <div class="modal fade" id="plantModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
-                <div class="modal-header d-flex justify-content-between align-items-center">
+                <div class="modal-header">
                     <div class="profile-title">
                         <span id="modalPlantTitle">TR-PH80-000</span>
-                        <span id="modalBadgeStatus" class="profile-badge badge-healthy">Healthy</span>
+                        <span id="modalBadgeStatus" class="profile-badge">Healthy</span>
                     </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -173,57 +137,25 @@
                     <div class="row g-4">
                         <div class="col-lg-5">
                             <div class="plant-photo-large mb-3">
-                                <img id="modalPlantImg" src="" alt="Plant Photo" style="width:100%; height:100%; object-fit: cover;" 
-                                onerror="this.onerror=null; this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/No_image_available.svg/600px-No_image_available.svg.png';">
+                                <img id="modalPlantImg" src="" alt="Plant Photo" style="width:100%; height:100%; object-fit: cover;">
                             </div>
-                            <div class="tech-card mb-0" style="padding: 15px;">
-                                <div class="detail-row" style="padding-top: 0;">
-                                    <span class="detail-label">Location (Table, Row)</span>
-                                    <span class="detail-val" id="modalLocation">--</span>
-                                </div>
-                                <div class="detail-row">
-                                    <span class="detail-label">QR Reference</span>
-                                    <span class="detail-val" id="modalQR" style="color: var(--accent-orange);">--</span>
-                                </div>
-                                <div class="detail-row" style="border-bottom: none; padding-bottom: 0;">
-                                    <span class="detail-label">Last Inspected</span>
-                                    <span class="detail-val" id="modalDate" style="color: var(--accent-blue);">--</span>
-                                </div>
+                            <div class="tech-card mb-0">
+                                <div class="detail-row"><span class="detail-label">Staff in Charge</span><span class="detail-val" id="modalStaff">--</span></div>
+                                <div class="detail-row"><span class="detail-label">Pest Status</span><span class="detail-val" id="modalPest">--</span></div>
+                                <div class="detail-row"><span class="detail-label">Last Record</span><span class="detail-val text-info" id="modalDate">--</span></div>
                             </div>
                         </div>
-
                         <div class="col-lg-7">
-                            <h5 style="font-size: 1rem; color: #fff; font-weight: bold; border-left: 3px solid var(--accent-red); padding-left: 10px; margin-bottom: 20px;">
-                                Vegetative Growth Metrics
-                            </h5>
-                            
+                            <h5 style="color: #fff; font-weight: bold; border-left: 3px solid var(--accent-red); padding-left: 10px; margin-bottom: 20px;">Live Metrics</h5>
                             <div class="row g-3 mb-4">
-                                <div class="col-md-4">
-                                    <div class="metric-card">
-                                        <div class="metric-label">Crown Diameter</div>
-                                        <div class="metric-val text-white"><span id="modalCrown">--</span><span style="font-size:1rem; color:#8b949e;"> mm</span></div>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="metric-card">
-                                        <div class="metric-label">Leaf Count</div>
-                                        <div class="metric-val text-white"><span id="modalLeaf">--</span></div>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="metric-card" style="border-color: var(--accent-blue);">
-                                        <div class="metric-label text-info">Total Runners</div>
-                                        <div class="metric-val text-info"><span id="modalRunner">--</span></div>
-                                    </div>
-                                </div>
+                                <div class="col-md-4"><div class="metric-card"><div class="metric-label">Leaves</div><div class="metric-val" id="modalLeaf">--</div></div></div>
+                                <div class="col-md-4"><div class="metric-card"><div class="metric-label">Flowers/Fruit</div><div class="metric-val" id="modalFlower">--</div></div></div>
+                                <div class="col-md-4"><div class="metric-card" style="border-color: var(--accent-blue);"><div class="metric-label">Runners</div><div class="metric-val" id="modalRunner">--</div></div></div>
                             </div>
-
                             <div class="tech-card">
-                                <div class="card-title">Plant History & Notes</div>
-                                <div style="color: #8b949e; font-size: 0.85rem; line-height: 1.6;">
-                                    This plant is currently in the <strong>Runner Production phase</strong>. 
-                                    Monitoring crown diameter is crucial to ensure the mother plant remains vigorous while producing new runners.
-                                </div>
+                                <div class="card-title">Canopy & Notes</div>
+                                <div class="detail-row"><span class="detail-label">Canopy Size</span><span class="detail-val" id="modalSize">--</span></div>
+                                <div id="modalNote" style="color: #8b949e; font-size: 0.85rem; padding-top: 10px;">--</div>
                             </div>
                         </div>
                     </div>
@@ -234,145 +166,124 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // โหลด Google Charts เพื่อใช้ Query
         google.charts.load('current', {'packages':['corechart']});
-        google.charts.setOnLoadCallback(fetchPlantDatabase);
+        google.charts.setOnLoadCallback(fetchData);
 
         let plantDB = {}; 
+        // ⚠️ ใส่ Google Sheet ID ของไฟล์ TerraTech_Database ตรงนี้
+        const SHEET_ID = '1yyJ724hBNOF69dTjgGpK_SvgR8fFqlMy4tOClpkWy-M'; 
 
-        const FALLBACK_IMAGE_URL = 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/No_image_available.svg/600px-No_image_available.svg.png';
-
-        function fetchPlantDatabase() {
-            // ⚠️ 1. Google Sheet ID
-            const sheetID = '1yyJ724hBNOF69dTjgGpK_SvgR8fFqlMy4tOClpkWy-M'; 
+        function fetchData() {
+            // ดึงข้อมูลจากคอลัมน์ A ถึง M (วันที่ ถึง ตำแหน่ง)
+            const query = new google.visualization.Query(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tq=select *`);
             
-            const query = new google.visualization.Query(`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=Plant_Inventory&tq=select A,B,C,D,E,F,G,H,I,J`);
-            
-            query.send(res => {
-                if (res.isError()) {
-                    let errMsg = res.getDetailedMessage() || res.getMessage();
-                    console.error('Error in query: ' + errMsg);
-                    document.getElementById('dynamic-grid-container').innerHTML = `<div class="text-center text-danger p-4">❌ Error: ${errMsg}</div>`;
-                    return;
-                }
+            query.send(handleResponse);
+        }
 
-                const data = res.getDataTable();
-                const rows = data.getNumberOfRows();
-                
-                for (let i = 0; i < rows; i++) {
-                    let id = data.getFormattedValue(i, 0);
-                    if(id) {
-                        id = id.trim();
-                        plantDB[id] = {
-                            qr: data.getFormattedValue(i, 1),
-                            table: data.getFormattedValue(i, 2),
-                            row: data.getFormattedValue(i, 3),
-                            status: data.getFormattedValue(i, 4),
-                            crown: data.getFormattedValue(i, 5),
-                            leaf: data.getFormattedValue(i, 6),
-                            runner: data.getFormattedValue(i, 7),
-                            lastUpdate: data.getFormattedValue(i, 8),
-                            photo: data.getFormattedValue(i, 9)
-                        };
-                    }
-                }
-                renderTable(1); 
-            });
+        function handleResponse(res) {
+            if (res.isError()) return;
+            const data = res.getDataTable();
+            const rows = data.getNumberOfRows();
+            
+            let totalF = 0, totalR = 0, totalL = 0;
+            let counts = { green: 0, yellow: 0, red: 0 };
+            let logHtml = "";
+
+            for (let i = 0; i < rows; i++) {
+                let pid = data.getFormattedValue(i, 2); // คอลัมน์ C: Plant ID
+                if(!pid) continue;
+
+                let health = data.getFormattedValue(i, 6);
+                let f = parseInt(data.getFormattedValue(i, 4)) || 0;
+                let r = parseInt(data.getFormattedValue(i, 5)) || 0;
+                let l = parseInt(data.getFormattedValue(i, 3)) || 0;
+
+                plantDB[pid] = {
+                    staff: data.getFormattedValue(i, 1),
+                    leaf: l,
+                    flower: f,
+                    runner: r,
+                    health: health,
+                    size: data.getFormattedValue(i, 7),
+                    pest: data.getFormattedValue(i, 8),
+                    note: data.getFormattedValue(i, 9),
+                    photo: data.getFormattedValue(i, 10),
+                    date: data.getFormattedValue(i, 0)
+                };
+
+                // คำนวณสรุป
+                totalF += f; totalR += r; totalL += l;
+                if(health === "ดีมาก") counts.green++;
+                else if(health === "ปกติ" || health === "อ่อนแอ") counts.yellow++;
+                else if(health === "วิกฤต") counts.red++;
+
+                if(i > rows - 6) logHtml = `<div>> ${pid} updated by ${data.getFormattedValue(i,1)}</div>` + logHtml;
+            }
+
+            // อัปเดต UI
+            document.getElementById('total-flowers').innerText = totalF;
+            document.getElementById('total-runners').innerText = totalR;
+            document.getElementById('avg-leaves').innerText = (totalL/rows).toFixed(1);
+            document.getElementById('activity-log').innerHTML = logHtml;
+
+            // อัปเดต Health Bar
+            let total = rows;
+            document.getElementById('bar-green').style.width = (counts.green/total*100) + "%";
+            document.getElementById('bar-yellow').style.width = (counts.yellow/total*100) + "%";
+            document.getElementById('bar-red').style.width = (counts.red/total*100) + "%";
+            document.getElementById('count-green').innerText = counts.green;
+            document.getElementById('count-yellow').innerText = counts.yellow;
+            document.getElementById('count-red').innerText = counts.red;
+
+            renderTable(1);
         }
 
         function renderTable(tableNum) {
-            tableNum = parseInt(tableNum);
             const container = document.getElementById('dynamic-grid-container');
-            container.innerHTML = ''; 
-
-            let startId = (tableNum - 1) * 70 + 1;
-            let midId = startId + 34; 
-            let endId = startId + 69; 
-
-            let html = `<div style="width: max-content;">`;
+            let start = (tableNum - 1) * 70 + 1;
+            let html = `<div style="width: max-content;"><div class="d-flex mb-2" style="gap:6px;"><div class="row-label">ROW 1</div>`;
             
-            html += `<div class="d-flex mb-2" style="gap: 6px;">`;
-            html += `<div class="row-label">ROW 1</div>`;
-            for (let i = startId; i <= midId; i++) { html += createPlantHtml(i, tableNum, 1); }
-            html += `</div>`;
-
-            html += `<div class="d-flex" style="gap: 6px;">`;
-            html += `<div class="row-label">ROW 2</div>`;
-            for (let i = midId + 1; i <= endId; i++) { html += createPlantHtml(i, tableNum, 2); }
-            html += `</div>`;
-
-            html += `</div>`;
-            container.innerHTML = html;
+            for(let i=start; i < start+35; i++) html += createPot(i);
+            html += `</div><div class="d-flex" style="gap:6px;"><div class="row-label">ROW 2</div>`;
+            for(let i=start+35; i < start+70; i++) html += createPot(i);
+            
+            container.innerHTML = html + `</div></div>`;
         }
 
-        function createPlantHtml(idNum, tableNum, rowNum) {
-            let plantId = 'TR-PH80-' + idNum.toString().padStart(3, '0');
-            let dbData = plantDB[plantId]; 
-            
-            let statusClass = 'status-healthy'; 
-            
-            if(dbData && dbData.status) {
-                if (dbData.status.includes('Sick') || dbData.status.includes('🟡')) statusClass = 'status-sick';
-                if (dbData.status.includes('Dead') || dbData.status.includes('🔴')) statusClass = 'status-dead';
+        function createPot(num) {
+            let pid = 'TR-PH80-' + num.toString().padStart(3, '0');
+            let data = plantDB[pid];
+            let statusClass = 'status-healthy';
+            if(data) {
+                if(data.health === "ปกติ" || data.health === "อ่อนแอ") statusClass = 'status-sick';
+                if(data.health === "วิกฤต") statusClass = 'status-dead';
             }
-
-            return `<div class="plant-thumbnail ${statusClass}" 
-                        onclick="openPlantProfile('${plantId}', ${tableNum}, ${rowNum})" 
-                        title="${plantId}">
-                        ${idNum.toString().padStart(3, '0')}
-                    </div>`;
+            return `<div class="plant-thumbnail ${statusClass}" onclick="openModal('${pid}')">${num.toString().padStart(3,'0')}</div>`;
         }
 
-        // --- อัปเกรดระบบประมวลผลรูปภาพสำหรับ AppSheet โดยเฉพาะ ---
-        function processImageUrl(url) {
-            if (!url || typeof url !== 'string' || url.trim() === '') {
-                return FALLBACK_IMAGE_URL;
-            }
-            url = url.trim();
-            
-            // ถ้าเป็นลิงก์เว็บปกติ (มี http นำหน้า)
-            if (url.startsWith('http')) {
-                let matchOpen = url.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/);
-                if (matchOpen && matchOpen[1]) return 'https://drive.google.com/uc?export=view&id=' + matchOpen[1];
-                let matchFile = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
-                if (matchFile && matchFile[1]) return 'https://drive.google.com/uc?export=view&id=' + matchFile[1];
-                return url;
-            }
+        function openModal(pid) {
+            let d = plantDB[pid];
+            if(!d) return alert("No data for " + pid);
 
-            // ⚠️ 2. แปลงชื่อไฟล์จาก AppSheet เป็นลิงก์ภาพ
-            const appName = "Strawberry_DB-709476484";
-            const tableName = "Plant_Inventory";
-            
-            // สร้าง URL พิเศษเพื่อดึงรูปจาก AppSheet
-            return `https://www.appsheet.com/template/gettablefileurl?appName=${appName}&tableName=${tableName}&fileName=${encodeURIComponent(url)}`;
-        }
+            document.getElementById('modalPlantTitle').innerText = pid;
+            document.getElementById('modalStaff').innerText = d.staff;
+            document.getElementById('modalPest').innerText = d.pest;
+            document.getElementById('modalDate').innerText = d.date;
+            document.getElementById('modalLeaf').innerText = d.leaf;
+            document.getElementById('modalFlower').innerText = d.flower;
+            document.getElementById('modalRunner').innerText = d.runner;
+            document.getElementById('modalSize').innerText = d.size;
+            document.getElementById('modalNote').innerText = d.note || "No additional notes.";
 
-        function openPlantProfile(plantId, tableNum, rowNum) {
-            let dbData = plantDB[plantId] || {}; 
+            // แปลงลิงก์รูป Google Drive
+            let imgUrl = d.photo.replace("open?id=", "uc?export=view&id=");
+            document.getElementById('modalPlantImg').src = imgUrl;
 
-            document.getElementById('modalPlantTitle').innerText = plantId;
-            
-            let statusText = dbData.status || 'N/A';
-            let badgeEl = document.getElementById('modalBadgeStatus');
-            badgeEl.innerText = statusText;
-            badgeEl.className = 'profile-badge badge-healthy'; 
-            if (statusText.includes('Sick') || statusText.includes('🟡')) badgeEl.className = 'profile-badge badge-sick';
-            if (statusText.includes('Dead') || statusText.includes('🔴')) badgeEl.className = 'profile-badge badge-dead';
+            let badge = document.getElementById('modalBadgeStatus');
+            badge.innerText = d.health;
+            badge.className = 'profile-badge ' + (d.health==="ดีมาก"?"badge-healthy":d.health==="วิกฤต"?"badge-dead":"badge-sick");
 
-            document.getElementById('modalLocation').innerText = `Table ${tableNum}, Row ${rowNum}`;
-            document.getElementById('modalQR').innerText = dbData.qr || 'N/A';
-            document.getElementById('modalDate').innerText = dbData.lastUpdate || 'No Record';
-            
-            document.getElementById('modalCrown').innerText = dbData.crown || '--';
-            document.getElementById('modalLeaf').innerText = dbData.leaf || '--';
-            document.getElementById('modalRunner').innerText = dbData.runner || '--';
-            
-            // ส่งชื่อไฟล์เข้าไปแปลงเป็น URL รูปภาพ
-            let finalImageUrl = processImageUrl(dbData.photo);
-            document.getElementById('modalPlantImg').src = finalImageUrl;
-
-            var myModal = new bootstrap.Modal(document.getElementById('plantModal'));
-            myModal.show();
+            new bootstrap.Modal(document.getElementById('plantModal')).show();
         }
     </script>
 </body>
