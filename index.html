@@ -146,16 +146,18 @@
 
         let plantDB = {}; 
         
-        // ⚠️ สำคัญมาก: ใส่ ID ของไฟล์ TerraTech_Database (ไฟล์ใหม่ที่เก็บข้อมูลแอป) เท่านั้น!
-        const SHEET_ID = '1yyJ724hBNOF69dTjgGpK_SvgR8fFqlMy4tOClpkWy-M'; 
+        // ⚠️ ID ของไฟล์ TerraTech_Database (ไฟล์ใหม่)
+        const SHEET_ID = '1AjDWcZX5tWvjI3bm2ylYv3xixGz8eLRkv_2gmywaZHY'; 
 
         function fetchPlantDatabase() {
-            // ดึงข้อมูล range=A:M เพื่อความชัวร์ว่าจะได้ทุกคอลัมน์
-            const query = new google.visualization.Query(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?range=A:M`);
+            // บังคับดึงข้อมูลจาก sheet=Log และเอาคอลัมน์ A ถึง M
+            const queryUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=Log&range=A:M`;
+            const query = new google.visualization.Query(queryUrl);
             
             query.send(res => {
                 if (res.isError()) {
                     console.error('Error fetching data: ' + res.getMessage());
+                    document.getElementById('activity-log').innerHTML = `<span class="text-danger">Error: ${res.getMessage()}</span>`;
                     return;
                 }
                 const data = res.getDataTable();
@@ -216,11 +218,14 @@
                 });
 
                 let totalPlants = uniquePids.length || 1;
-                document.getElementById('avg-leaves').innerText = (tL/totalPlants).toFixed(1);
-                document.getElementById('total-flowers').innerText = tF;
-                document.getElementById('total-runners').innerText = tR;
+                if(uniquePids.length > 0) {
+                    document.getElementById('avg-leaves').innerText = (tL/totalPlants).toFixed(1);
+                    document.getElementById('total-flowers').innerText = tF;
+                    document.getElementById('total-runners').innerText = tR;
+                }
+                
                 document.getElementById('last-sync').innerText = new Date().toLocaleTimeString();
-                document.getElementById('activity-log').innerHTML = logHtml;
+                document.getElementById('activity-log').innerHTML = logHtml || "No recent activity found on sheet 'Log'.";
 
                 document.getElementById('bar-green').style.width = (hStats.green/totalPlants*100) + "%";
                 document.getElementById('bar-orange').style.width = (hStats.orange/totalPlants*100) + "%";
@@ -257,11 +262,11 @@
         function openProfile(pid) {
             let d = plantDB[pid];
             
-            // 🚨 ระบบตรวจสอบสาเหตุ (Debug Alert)
+            // 🚨 ระบบตรวจสอบสาเหตุ (Debug Alert) ยังคงอยู่เพื่อให้แก้ไขง่าย
             if(!d) {
                 let foundKeys = Object.keys(plantDB);
-                let keyStr = foundKeys.length > 0 ? foundKeys.slice(0, 15).join(", ") + " ..." : "ไม่มีข้อมูลเลยใน Sheet นี้";
-                alert(`❌ ไม่พบข้อมูล: ${pid}\n\nระบบอ่านรหัสจากคอลัมน์ C มาได้ดังนี้:\n[ ${keyStr} ]\n\n📌 สาเหตุที่เป็นไปได้:\n1. รหัสที่ขึ้นด้านบนไม่ตรงกับ TR-PH80-xxx (อาจดึงไฟล์ผิด)\n2. ต้นไม้นี้ยังไม่เคยถูกพนักงานสแกนบันทึกข้อมูล`);
+                let keyStr = foundKeys.length > 0 ? foundKeys.slice(0, 15).join(", ") + " ..." : "ไม่มีข้อมูลในแผ่นงานชื่อ 'Log'";
+                alert(`❌ ไม่พบข้อมูล: ${pid}\n\nระบบอ่านรหัสจากคอลัมน์ C ในแผ่นงาน 'Log' มาได้ดังนี้:\n[ ${keyStr} ]\n\n📌 โปรดตรวจสอบว่าแผ่นงานด้านล่างของ Google Sheet เปลี่ยนชื่อเป็น Log หรือยังครับ`);
                 return;
             }
 
