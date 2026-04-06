@@ -41,6 +41,15 @@
         .detail-row:last-child { border-bottom: none; }
         .detail-label { color: #8b949e; font-size: 0.85rem; font-weight: bold; }
         .detail-val { color: #fff; font-size: 0.95rem; font-weight: bold; text-align: right; }
+        
+        /* สไตล์ตารางประวัติย้อนหลังใน Modal */
+        .table-dark-custom { width: 100%; text-align: left; border-collapse: collapse; color: #8b949e; }
+        .table-dark-custom th { border-bottom: 1px solid var(--border-color); padding: 8px; font-size: 0.75rem; color: #fff; text-transform: uppercase; position: sticky; top: 0; background: var(--card-bg); }
+        .table-dark-custom td { border-bottom: 1px solid #222; padding: 8px; font-size: 0.8rem; }
+        /* สไตล์ Scrollbar สำหรับตารางประวัติ */
+        #modalHistoryTimeline::-webkit-scrollbar { width: 6px; }
+        #modalHistoryTimeline::-webkit-scrollbar-track { background: #111; border-radius: 4px; }
+        #modalHistoryTimeline::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -127,7 +136,7 @@
                             </div>
                         </div>
                         <div class="col-lg-7">
-                            <h5 style="color: #fff; font-weight: bold; border-left: 3px solid var(--accent-red); padding-left: 10px; margin-bottom: 20px;">Growth Metrics</h5>
+                            <h5 style="color: #fff; font-weight: bold; border-left: 3px solid var(--accent-red); padding-left: 10px; margin-bottom: 20px;">Latest Growth Metrics</h5>
                             <div class="row g-3 mb-4">
                                 <div class="col-md-4"><div class="metric-card"><div class="metric-label">Leaves</div><div class="metric-val" id="modalLeaf">--</div></div></div>
                                 <div class="col-md-4"><div class="metric-card"><div class="metric-label">Flowers</div><div class="metric-val" id="modalFlower">--</div></div></div>
@@ -136,6 +145,17 @@
                             <div class="tech-card"><div class="card-title">Canopy & Notes</div><div class="detail-row"><span class="detail-label">Grade</span><span class="detail-val" id="modalSize">--</span></div><div id="modalNote" style="color: #8b949e; font-size: 0.85rem; padding-top:10px;">--</div></div>
                         </div>
                     </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="tech-card mb-0" style="padding: 15px;">
+                                <div class="card-title mb-2">Lifecycle & Inspection History</div>
+                                <div id="modalHistoryTimeline" style="max-height: 250px; overflow-y: auto;">
+                                    </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -179,6 +199,7 @@
                     return "--";
                 };
 
+                // วนลูปอ่านข้อมูลทุกบรรทัด
                 for (let i = 0; i < rows; i++) {
                     let rawID = safeGetStr(i, 2); 
                     if(rawID === "--" || rawID === "" || rawID.includes("Plant ID") || rawID.includes("รหัส")) continue;
@@ -186,7 +207,13 @@
                     let pid = rawID.trim().toUpperCase(); 
                     let health = safeGetStr(i, 6); 
 
-                    plantDB[pid] = {
+                    // --- การเปลี่ยนแปลงส่วนที่ 1: ตรวจสอบและสร้างอาร์เรย์เก็บประวัติ ---
+                    if (!plantDB[pid]) {
+                        plantDB[pid] = { history: [] }; // สร้างกล่องเก็บประวัติถ้ายังไม่เคยมี
+                    }
+
+                    // สร้างชุดข้อมูลของรอบการสแกนนั้นๆ
+                    let record = {
                         date: safeGetStr(i, 0),
                         staff: safeGetStr(i, 1),
                         leaf: parseInt(safeGetStr(i, 3)) || 0,
@@ -200,11 +227,19 @@
                         device: safeGetStr(i, 11)
                     };
 
+                    // โยนข้อมูลรอบนี้เข้าไปในประวัติ
+                    plantDB[pid].history.push(record);
+
+                    // อัปเดตข้อมูลล่าสุด (ข้อมูลบรรทัดล่างสุดจะเป็นข้อมูลล่าสุดเสมอ)
+                    Object.assign(plantDB[pid], record);
+                    // --------------------------------------------------------
+
                     if(i >= rows - 5) {
                         logHtml = `<div>> [${safeGetStr(i,0)}] ${pid} updated by ${safeGetStr(i,1)}</div>` + logHtml;
                     }
                 }
 
+                // คำนวณสรุปหน้าจอหลัก (ใช้ข้อมูลล่าสุด)
                 let uniquePids = Object.keys(plantDB);
                 uniquePids.forEach(pid => {
                     let d = plantDB[pid];
@@ -235,10 +270,8 @@
             });
         }
 
-        // --- เปลี่ยนวิธีดึงรูป เป็น Google Drive Thumbnail API ---
         function getDriveImageUrl(url) {
-            if (!url || url === "--" || url === "") return ""; // ปล่อยว่างให้ onerror ทำงาน
-            
+            if (!url || url === "--" || url === "") return ""; 
             let fileId = '';
             const matchD = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
             if (matchD && matchD[1]) {
@@ -247,12 +280,9 @@
                 const matchId = url.match(/id=([a-zA-Z0-9_-]+)/);
                 if (matchId && matchId[1]) fileId = matchId[1];
             }
-
             if (fileId) {
-                // ใช้ Thumbnail API (ขนาด w800 = กว้าง 800px) ข้ามการติดบล็อกจาก Google Drive ได้ดีเยี่ยม
                 return `https://drive.google.com/thumbnail?id=${fileId}&sz=w800`;
             }
-            
             return url;
         }
 
@@ -281,6 +311,7 @@
             let d = plantDB[pid];
             if(!d) return alert("❌ ไม่พบข้อมูล: " + pid);
 
+            // ข้อมูลล่าสุด
             document.getElementById('modalPlantTitle').innerText = pid;
             document.getElementById('modalStaff').innerText = d.staff;
             document.getElementById('modalPest').innerText = d.pest;
@@ -293,11 +324,7 @@
             document.getElementById('modalNote').innerText = d.note || "-";
             
             let modalImg = document.getElementById('modalPlantImg');
-            
-            // รีเซ็ตภาพเป็นค่าว่างก่อน เพื่อกระตุ้นการโหลดใหม่
             modalImg.src = ""; 
-            
-            // ดึงลิงก์และใส่แหล่งที่มาใหม่ (ใช้ Thumbnail API)
             let newSrc = getDriveImageUrl(d.photo);
             if (newSrc) {
                 modalImg.src = newSrc;
@@ -308,6 +335,29 @@
             let b = document.getElementById('modalBadgeStatus');
             b.innerText = d.health;
             b.className = 'profile-badge ' + (d.health==="ดีมาก"?"badge-healthy":d.health==="วิกฤต"?"badge-dead":"badge-sick");
+
+            // --- การเปลี่ยนแปลงส่วนที่ 2: สร้างตารางประวัติย้อนหลัง ---
+            let historyHtml = '<table class="table-dark-custom"><thead><tr><th>Date</th><th>Staff</th><th>Leaf</th><th>Flower</th><th>Runner</th><th>Health</th><th>Note</th></tr></thead><tbody>';
+            
+            // กลับด้าน Array เพื่อให้ข้อมูลที่สแกนล่าสุดอยู่ด้านบนสุดของตาราง
+            let reversedHistory = [...d.history].reverse(); 
+            
+            reversedHistory.forEach(record => {
+                let hColor = record.health === "ดีมาก" ? "var(--accent-green)" : (record.health === "วิกฤต" ? "var(--accent-red)" : "var(--accent-orange)");
+                historyHtml += `<tr>
+                    <td>${record.date.split(" ")[0]} <span style="font-size:0.65rem; color:#555;">${record.date.split(" ")[1]||''}</span></td>
+                    <td>${record.staff}</td>
+                    <td>${record.leaf}</td>
+                    <td>${record.flower}</td>
+                    <td>${record.runner}</td>
+                    <td style="color: ${hColor}; font-weight: bold;">${record.health}</td>
+                    <td>${record.note || '-'}</td>
+                </tr>`;
+            });
+            historyHtml += '</tbody></table>';
+            
+            document.getElementById('modalHistoryTimeline').innerHTML = historyHtml;
+            // ------------------------------------------------------
 
             new bootstrap.Modal(document.getElementById('plantModal')).show();
         }
