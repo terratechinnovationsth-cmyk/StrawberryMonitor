@@ -33,7 +33,7 @@
         .badge-healthy { background: rgba(46, 204, 113, 0.2); color: var(--accent-green); border: 1px solid var(--accent-green); }
         .badge-sick { background: rgba(255, 159, 67, 0.2); color: var(--accent-orange); border: 1px solid var(--accent-orange); }
         .badge-dead { background: rgba(255, 77, 77, 0.2); color: var(--accent-red); border: 1px solid var(--accent-red); }
-        .plant-photo-large { height: 100%; min-height: 250px; width: 100%; background: #111; border-radius: 12px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--border-color); }
+        .plant-photo-large { height: 100%; min-height: 250px; width: 100%; background: #111; border-radius: 12px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--border-color); position: relative; }
         .metric-card { background: #0b0e11; border: 1px solid var(--border-color); border-radius: 10px; padding: 15px; text-align: center; height: 100%; }
         .metric-label { font-size: 0.7rem; color: #8b949e; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; }
         .metric-val { font-size: 1.4rem; color: #ffffff; font-weight: 700; }
@@ -116,10 +116,13 @@
                 <div class="modal-body">
                     <div class="row g-4">
                         <div class="col-lg-5">
-                            <div class="plant-photo-large mb-3"><img id="modalPlantImg" src="" alt="Photo Loading..." style="width:100%; height:100%; object-fit: cover; color: #555; font-size: 0.8rem; text-align: center;"></div>
+                            <div class="plant-photo-large mb-3">
+                                <img id="modalPlantImg" src="" alt="Loading Photo..." style="width:100%; height:100%; object-fit: cover;" onerror="this.onerror=null; this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/No_image_available.svg/600px-No_image_available.svg.png';">
+                            </div>
                             <div class="tech-card mb-0">
                                 <div class="detail-row"><span class="detail-label">Staff</span><span class="detail-val" id="modalStaff">--</span></div>
                                 <div class="detail-row"><span class="detail-label">Pest Report</span><span class="detail-val" id="modalPest">--</span></div>
+                                <div class="detail-row"><span class="detail-label">Device Used</span><span class="detail-val" id="modalDevice">--</span></div>
                                 <div class="detail-row" style="border:none;"><span class="detail-label">Last Inspection</span><span class="detail-val text-info" id="modalDate">--</span></div>
                             </div>
                         </div>
@@ -145,11 +148,10 @@
 
         let plantDB = {}; 
         
-        // ⚠️ ID ของไฟล์ TerraTech_Database (ไฟล์ใหม่ของคุณ)
+        // ⚠️ ID ของไฟล์ TerraTech_Database
         const SHEET_ID = '1AjDWcZX5tWvjI3bm2ylYv3xixGz8eLRkv_2gmywaZHY'; 
 
         function fetchPlantDatabase() {
-            // ดึงข้อมูลจากแผ่นงาน Log คอลัมน์ A:M
             const queryUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=Log&range=A:M`;
             const query = new google.visualization.Query(queryUrl);
             
@@ -169,7 +171,6 @@
 
                 plantDB = {};
 
-                // ฟังก์ชันดึงค่าแบบปลอดภัย
                 let safeGetStr = (r, c) => {
                     if (cols > c) {
                         let val = data.getFormattedValue(r, c);
@@ -179,12 +180,11 @@
                 };
 
                 for (let i = 0; i < rows; i++) {
-                    let rawID = safeGetStr(i, 2); // คอลัมน์ C: Plant ID
-                    
+                    let rawID = safeGetStr(i, 2); 
                     if(rawID === "--" || rawID === "" || rawID.includes("Plant ID") || rawID.includes("รหัส")) continue;
                     
                     let pid = rawID.trim().toUpperCase(); 
-                    let health = safeGetStr(i, 6); // คอลัมน์ G: สุขภาพ
+                    let health = safeGetStr(i, 6); 
 
                     plantDB[pid] = {
                         date: safeGetStr(i, 0),
@@ -196,7 +196,8 @@
                         size: safeGetStr(i, 7),
                         pest: safeGetStr(i, 8),
                         note: safeGetStr(i, 9),
-                        photo: safeGetStr(i, 10), // ลิงก์รูปภาพจากคอลัมน์ K
+                        photo: safeGetStr(i, 10),
+                        device: safeGetStr(i, 11)
                     };
 
                     if(i >= rows - 5) {
@@ -234,30 +235,24 @@
             });
         }
 
-        // --- เพิ่มฟังก์ชันแปลงลิงก์ Google Drive ขั้นสูง ---
+        // --- เปลี่ยนวิธีดึงรูป เป็น Google Drive Thumbnail API ---
         function getDriveImageUrl(url) {
-            if (!url || url === "--" || url === "") return "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/No_image_available.svg/600px-No_image_available.svg.png";
+            if (!url || url === "--" || url === "") return ""; // ปล่อยว่างให้ onerror ทำงาน
             
-            // ถ้าเป็นลิงก์ uc?id= อยู่แล้ว ไม่ต้องแปลง
-            if (url.includes('drive.google.com/uc')) return url;
-
             let fileId = '';
-            // รองรับรูปแบบ /file/d/FILE_ID/
             const matchD = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
             if (matchD && matchD[1]) {
                 fileId = matchD[1];
             } else {
-                // รองรับรูปแบบ id=FILE_ID
                 const matchId = url.match(/id=([a-zA-Z0-9_-]+)/);
                 if (matchId && matchId[1]) fileId = matchId[1];
             }
 
             if (fileId) {
-                // แปลงเป็น Direct Link ที่แสดงผลใน <img> ได้ทันที
-                return `https://drive.google.com/uc?export=view&id=${fileId}`;
+                // ใช้ Thumbnail API (ขนาด w800 = กว้าง 800px) ข้ามการติดบล็อกจาก Google Drive ได้ดีเยี่ยม
+                return `https://drive.google.com/thumbnail?id=${fileId}&sz=w800`;
             }
             
-            // หากแปลงไม่ได้ ส่งลิงก์เดิมกลับไป
             return url;
         }
 
@@ -284,7 +279,7 @@
 
         function openProfile(pid) {
             let d = plantDB[pid];
-            if(!d) return alert("❌ ไม่พบข้อมูลล่าสุดของ " + pid);
+            if(!d) return alert("❌ ไม่พบข้อมูล: " + pid);
 
             document.getElementById('modalPlantTitle').innerText = pid;
             document.getElementById('modalStaff').innerText = d.staff;
@@ -294,19 +289,21 @@
             document.getElementById('modalFlower').innerText = d.flower;
             document.getElementById('modalRunner').innerText = d.runner;
             document.getElementById('modalSize').innerText = d.size;
+            document.getElementById('modalDevice').innerText = d.device;
             document.getElementById('modalNote').innerText = d.note || "-";
             
-            // ดึงลิงก์รูปภาพมาแปลงเป็น Direct Link
-            let rawPhotoLink = d.photo || "";
             let modalImg = document.getElementById('modalPlantImg');
             
-            // แสดง Loading ก๊อกสองในรูป
-            modalImg.src = "https://row.sc.gov/images/loading.gif"; 
-
-            // แปลงลิงก์และใส่แหล่งที่มาใหม่
-            setTimeout(() => {
-                modalImg.src = getDriveImageUrl(rawPhotoLink);
-            }, 300); // หน่วงเวลาเล็กน้อยเพื่อให้ดูมีมิติการโหลด
+            // รีเซ็ตภาพเป็นค่าว่างก่อน เพื่อกระตุ้นการโหลดใหม่
+            modalImg.src = ""; 
+            
+            // ดึงลิงก์และใส่แหล่งที่มาใหม่ (ใช้ Thumbnail API)
+            let newSrc = getDriveImageUrl(d.photo);
+            if (newSrc) {
+                modalImg.src = newSrc;
+            } else {
+                modalImg.src = "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/No_image_available.svg/600px-No_image_available.svg.png";
+            }
 
             let b = document.getElementById('modalBadgeStatus');
             b.innerText = d.health;
